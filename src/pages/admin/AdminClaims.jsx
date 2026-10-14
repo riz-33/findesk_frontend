@@ -19,7 +19,7 @@ export const AdminClaims = () => {
       id: "CLM-502",
       employeeName: "Sara Ahmed",
       employeeId: "EMP-108",
-      type: "Tax Declaration",
+      type: "Payroll & Tax",
       category: "Health Insurance Premium",
       amount: "\$650.00",
       submissionDate: "2026-06-08",
@@ -63,7 +63,7 @@ export const AdminClaims = () => {
     const matchesTab =
       activeTab === "ALL" ||
       (activeTab === "Reimbursement" && claim.type === "Reimbursement") ||
-      (activeTab === "Tax Declaration" && claim.type === "Tax Declaration") ||
+      (activeTab === "Payroll & Tax" && claim.type === "Payroll & Tax") ||
       (activeTab === "Pending" && claim.status === "Pending");
 
     const matchesSearch =
@@ -123,7 +123,7 @@ export const AdminClaims = () => {
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
-            {["ALL", "Pending", "Reimbursement", "Tax Declaration"].map(
+            {["ALL", "Pending", "Reimbursement", "Payroll & Tax"].map(
               (tab) => (
                 <button
                   key={tab}

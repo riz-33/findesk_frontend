@@ -20,7 +20,8 @@ export const EmployeeClaims = () => {
       amount: "\$650.00",
       submissionDate: "2026-06-08",
       status: "Approved",
-      description: "Annual family health insurance premium tax exemption proof.",
+      description:
+        "Annual family health insurance premium tax exemption proof.",
       attachment: "Health_Insurance_Policy_2026.pdf",
     },
   ]);
@@ -49,7 +50,9 @@ export const EmployeeClaims = () => {
     };
 
     setClaims([newClaim, ...claims]);
-    setSuccessMsg("Claim submitted successfully and sent for finance approval!");
+    setSuccessMsg(
+      "Claim submitted successfully and sent for finance approval!",
+    );
 
     setTimeout(() => {
       setIsModalOpen(false);
@@ -80,17 +83,30 @@ export const EmployeeClaims = () => {
       {/* Top Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Reimbursements & Tax Declarations</h1>
+          <h1 className="text-xl font-bold text-slate-900">
+            Reimbursements & Tax Declarations
+          </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Submit out-of-pocket business expenses, travel claims, and annual tax saving exemption proofs.
+            Submit out-of-pocket business expenses, travel claims, and annual
+            tax saving exemption proofs.
           </p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
           className="inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium text-sm rounded-xl shadow-sm shadow-blue-600/20 transition-all gap-2"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M12 4v16m8-8H4"
+            ></path>
           </svg>
           Submit New Claim
         </button>
@@ -99,30 +115,44 @@ export const EmployeeClaims = () => {
       {/* Claims Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Claims Submitted</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            Total Claims Submitted
+          </p>
           <div className="flex items-baseline justify-between mt-2">
-            <h3 className="text-2xl font-bold text-slate-900">{claims.length}</h3>
-            <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">YTD</span>
+            <h3 className="text-2xl font-bold text-slate-900">
+              {claims.length}
+            </h3>
+            <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
+              YTD
+            </span>
           </div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Pending Review</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            Pending Review
+          </p>
           <div className="flex items-baseline justify-between mt-2">
             <h3 className="text-2xl font-bold text-slate-900">
-              {claims.filter(c => c.status === "Pending").length}
+              {claims.filter((c) => c.status === "Pending").length}
             </h3>
-            <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">In queue</span>
+            <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">
+              In queue
+            </span>
           </div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Approved Payouts</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            Approved Payouts
+          </p>
           <div className="flex items-baseline justify-between mt-2">
             <h3 className="text-2xl font-bold text-slate-900">
-              {claims.filter(c => c.status === "Approved").length}
+              {claims.filter((c) => c.status === "Approved").length}
             </h3>
-            <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">Verified</span>
+            <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
+              Verified
+            </span>
           </div>
         </div>
       </div>
@@ -130,7 +160,9 @@ export const EmployeeClaims = () => {
       {/* Claims History Table */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div className="p-5 border-b border-slate-200">
-          <h2 className="text-base font-semibold text-slate-900">My Claim Submissions History</h2>
+          <h2 className="text-base font-semibold text-slate-900">
+            My Claim Submissions History
+          </h2>
         </div>
 
         <div className="overflow-x-auto">
@@ -148,23 +180,36 @@ export const EmployeeClaims = () => {
             <tbody className="divide-y divide-slate-200 text-sm">
               {claims.length > 0 ? (
                 claims.map((claim) => (
-                  <tr key={claim.id} className="hover:bg-slate-50/50 transition-colors">
+                  <tr
+                    key={claim.id}
+                    className="hover:bg-slate-50/50 transition-colors"
+                  >
                     <td className="py-4 px-6">
-                      <p className="font-semibold text-slate-900">{claim.category}</p>
-                      <span className="text-xs font-mono text-blue-600 font-medium">{claim.id}</span>
+                      <p className="font-semibold text-slate-900">
+                        {claim.category}
+                      </p>
+                      <span className="text-xs font-mono text-blue-600 font-medium">
+                        {claim.id}
+                      </span>
                     </td>
                     <td className="py-4 px-6">
                       <span className="inline-block px-2.5 py-1 bg-slate-100 text-slate-700 text-xs font-semibold rounded-md border border-slate-200">
                         {claim.type}
                       </span>
                     </td>
-                    <td className="py-4 px-6 font-bold text-slate-900">{claim.amount}</td>
+                    <td className="py-4 px-6 font-bold text-slate-900">
+                      {claim.amount}
+                    </td>
                     <td className="py-4 px-6">
-                      <span className={`inline-block px-2.5 py-1 rounded-md text-xs font-semibold border ${getStatusBadge(claim.status)}`}>
+                      <span
+                        className={`inline-block px-2.5 py-1 rounded-md text-xs font-semibold border ${getStatusBadge(claim.status)}`}
+                      >
                         {claim.status}
                       </span>
                     </td>
-                    <td className="py-4 px-6 text-slate-500 text-xs font-medium">{claim.submissionDate}</td>
+                    <td className="py-4 px-6 text-slate-500 text-xs font-medium">
+                      {claim.submissionDate}
+                    </td>
                     <td className="py-4 px-6 text-right">
                       <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
                         {claim.attachment}
@@ -174,7 +219,10 @@ export const EmployeeClaims = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="py-8 text-center text-slate-400 text-sm">
+                  <td
+                    colSpan="6"
+                    className="py-8 text-center text-slate-400 text-sm"
+                  >
                     No claims submitted yet.
                   </td>
                 </tr>
@@ -188,9 +236,10 @@ export const EmployeeClaims = () => {
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
-            
             <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <h2 className="text-lg font-bold text-slate-900">Submit New Claim / Tax Proof</h2>
+              <h2 className="text-lg font-bold text-slate-900">
+                Submit New Claim / Tax Proof
+              </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 flex items-center justify-center text-slate-700 font-bold transition-all"
@@ -215,12 +264,16 @@ export const EmployeeClaims = () => {
                     value={claimType}
                     onChange={(e) => {
                       setClaimType(e.target.value);
-                      setCategory(e.target.value === "Reimbursement" ? "Travel & Transport" : "Health Insurance");
+                      setCategory(
+                        e.target.value === "Reimbursement"
+                          ? "Travel & Transport"
+                          : "Health Insurance",
+                      );
                     }}
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white"
                   >
                     <option value="Reimbursement">Reimbursement</option>
-                    <option value="Tax Declaration">Tax Declaration</option>
+                    <option value="Payroll & Tax">Payroll & Tax</option>
                   </select>
                 </div>
 
@@ -235,16 +288,29 @@ export const EmployeeClaims = () => {
                   >
                     {claimType === "Reimbursement" ? (
                       <>
-                        <option value="Travel & Transport">Travel & Transport</option>
+                        <option value="Travel & Transport">
+                          Travel & Transport
+                        </option>
                         <option value="Client Dining">Client Dining</option>
-                        <option value="Internet & Utilities">Internet & Utilities</option>
+                        <option value="Internet & Utilities">
+                          Internet & Utilities
+                        </option>
                         <option value="Office Supplies">Office Supplies</option>
+                        <option value="Office Entertainment">
+                          Office Entertainment
+                        </option>
+                        <option value="Health & Wellness">
+                          Health & Wellness
+                        </option>
                       </>
                     ) : (
                       <>
-                        <option value="Health Insurance">Health Insurance</option>
-                        <option value="Provident Fund Voluntary">Provident Fund Voluntary</option>
-                        <option value="Education Allowance">Education Allowance</option>
+                        <option value="Pay Slip Discrepancies">
+                          Pay Slip Discrepancies
+                        </option>
+                        <option value="Tax Document">Tax Document</option>
+                        <option value="Banking Updates">Banking Updates</option>
+                        <option value="Bonus & Commission Status">Bonus & Commission Status</option>
                       </>
                     )}
                   </select>
@@ -268,7 +334,8 @@ export const EmployeeClaims = () => {
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Description / Justification <span className="text-red-500">*</span>
+                  Description / Justification{" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   required
@@ -282,7 +349,8 @@ export const EmployeeClaims = () => {
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Attach Receipt / Proof PDF <span className="text-red-500">*</span>
+                  Attach Receipt / Proof PDF{" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="file"
@@ -309,7 +377,6 @@ export const EmployeeClaims = () => {
                 </button>
               </div>
             </form>
-
           </div>
         </div>
       )}

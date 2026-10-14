@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-export const AddTicket = () => {
+export const EmployeeAddTicket = () => {
   const [category, setCategory] = useState("");
   const [priority, setPriority] = useState("Medium");
   const [subject, setSubject] = useState("");

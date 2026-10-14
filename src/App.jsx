@@ -19,6 +19,7 @@ import { EmployeePayslips } from "./pages/employee/EmployeePayslips";
 import { EmployeeTaxCertificate } from "./pages/employee/EmployeeTaxCertificate";
 import { EmployeeClaims } from "./pages/employee/EmployeeClaims";
 import { EmployeeProfile } from "./pages/employee/EmployeeProfile";
+import { EmployeeAddTicket } from "./pages/employee/EmployeeAddTicket";
 
 function App() {
   return (
@@ -45,6 +46,7 @@ function App() {
             path="/emp/tax-certificate"
             element={<EmployeeTaxCertificate />}
           />
+          <Route path="/emp/add-ticket" element={<EmployeeAddTicket />} />
           <Route path="/emp/claims" element={<EmployeeClaims />} />
 
           <Route path="/emp/profile" element={<EmployeeProfile />} />
