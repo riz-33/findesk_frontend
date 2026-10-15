@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useContext, useEffect } from "react";
+import api from "../../services/api.js";
 
 export const AdminEmployees = () => {
   // Mock data for registered corporate employees
   const [employees, setEmployees] = useState([
     {
-      id: "EMP-101",
+      empId: "EMP-101",
       name: "Muhammad Rizwan",
       email: "rizwan.quettawala@findesk.com",
       department: "Engineering",
@@ -13,7 +14,7 @@ export const AdminEmployees = () => {
       joinedDate: "2025-02-15",
     },
     {
-      id: "EMP-108",
+      empId: "EMP-108",
       name: "Sara Ahmed",
       email: "sara.ahmed@findesk.com",
       department: "Marketing",
@@ -22,7 +23,7 @@ export const AdminEmployees = () => {
       joinedDate: "2025-05-10",
     },
     {
-      id: "EMP-045",
+      empId: "EMP-045",
       name: "Bilal Khan",
       email: "bilal.khan@findesk.com",
       department: "Finance & Accounts",
@@ -31,7 +32,7 @@ export const AdminEmployees = () => {
       joinedDate: "2024-11-20",
     },
     {
-      id: "EMP-092",
+      empId: "EMP-092",
       name: "Ayesha Malik",
       email: "ayesha.malik@findesk.com",
       department: "HR",
@@ -40,7 +41,7 @@ export const AdminEmployees = () => {
       joinedDate: "2025-01-05",
     },
     {
-      id: "EMP-210",
+      empId: "EMP-210",
       name: "Usman Tariq",
       email: "usman.tariq@findesk.com",
       department: "Operations",
@@ -61,34 +62,56 @@ export const AdminEmployees = () => {
   const [newDept, setNewDept] = useState("Engineering");
   const [newRole, setNewRole] = useState("Employee");
   const [newPassword, setNewPassword] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
   // Handle adding employee
-  const handleAddEmployee = (e) => {
+  const handleAddEmployee = async (e) => {
     e.preventDefault();
-    const newEmployee = {
-      id: newEmpId,
-      name: newName,
-      email: newEmail,
-      department: newDept,
-      role: newRole,
-      status: "Active",
-      joinedDate: new Date().toISOString().split("T")[0],
-    };
+    setErrorMsg("");
 
-    setEmployees([newEmployee, ...employees]);
-    setIsAddModalOpen(false);
-    // Reset form
-    setNewEmpId("");
-    setNewName("");
-    setNewEmail("");
-    setNewPassword("");
+    try {
+      // Backend API call with await
+      const response = await api.post("/auth/register", {
+        empId: newEmpId,
+        name: newName,
+        email: newEmail,
+        department: newDept,
+        role: newRole,
+        password: newPassword,
+      });
+
+      const newEmployee = {
+        empId: newEmpId,
+        name: newName,
+        email: newEmail,
+        department: newDept,
+        role: newRole,
+        status: "Active",
+        joinedDate: new Date().toISOString().split("T")[0],
+      };
+
+      setEmployees([newEmployee, ...employees]);
+      setIsAddModalOpen(false);
+
+      // Reset form
+      setNewEmpId("");
+      setNewName("");
+      setNewEmail("");
+      setNewPassword("");
+    } catch (error) {
+      console.error("Error adding employee:", error);
+      setErrorMsg(
+        error.response?.data?.error ||
+          "Failed to register employee. Try again.",
+      );
+    }
   };
 
   // Toggle status (Active / Inactive)
   const toggleStatus = (id) => {
     setEmployees((prev) =>
       prev.map((emp) =>
-        emp.id === id
+        emp.empId === id
           ? { ...emp, status: emp.status === "Active" ? "Inactive" : "Active" }
           : emp,
       ),
@@ -102,9 +125,24 @@ export const AdminEmployees = () => {
     const matchesSearch =
       emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       emp.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      emp.id.toLowerCase().includes(searchQuery.toLowerCase());
+      emp.empId.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesDept && matchesSearch;
   });
+
+  const fetchUsers = async () => {
+    try {
+      const response = await api.get("/auth/users");
+      setEmployees(response.data);
+      console.log("Fetched users:", response.data);
+      setErrorMsg("Failed to load employees from database.");
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -193,14 +231,14 @@ export const AdminEmployees = () => {
               {filteredEmployees.length > 0 ? (
                 filteredEmployees.map((emp) => (
                   <tr
-                    key={emp.id}
+                    key={emp.empId}
                     className="hover:bg-slate-50/50 transition-colors"
                   >
                     <td className="py-4 px-6">
                       <p className="font-semibold text-slate-900">{emp.name}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs font-mono font-medium text-blue-600">
-                          {emp.id}
+                          {emp.empId}
                         </span>
                         <span className="text-slate-300">•</span>
                         <span className="text-xs text-slate-500">
@@ -238,7 +276,7 @@ export const AdminEmployees = () => {
                     </td>
                     <td className="py-4 px-6 text-right">
                       <button
-                        onClick={() => toggleStatus(emp.id)}
+                        onClick={() => toggleStatus(emp.empId)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                           emp.status === "Active"
                             ? "bg-red-50 text-red-600 hover:bg-red-100"

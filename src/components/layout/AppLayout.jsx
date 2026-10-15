@@ -10,7 +10,7 @@ const AppLayout = () => {
   const currentUser = {
     name: "Muhammad Rizwan",
     employeeId: "EMP-101",
-    role: "employee", // Change to "admin" to test admin view
+    role: "admin", // Change to "admin" to test admin view
   };
 
   return (
@@ -20,7 +20,7 @@ const AppLayout = () => {
         user={currentUser}
       />
       <div className="flex flex-1 overflow-hidden">
-        <div className="hidden lg:flex h-full">
+        <div className="hidden lg:flex">
           <Sidebar isCollapsed={isCollapsed} user={currentUser} />
         </div>
         <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-transparent">

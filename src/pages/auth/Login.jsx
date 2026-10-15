@@ -1,31 +1,38 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../../services/api.js";
+// import { AuthContext } from "../../context/AuthContext.jsx";
+import { Link } from "react-router-dom";
 
 export const Login = () => {
-  const [employeeId, setEmployeeId] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  // const { login } = useContext(AuthContext);
 
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setErrorMessage("");
+    // setErrorMessage("");
 
     try {
-      // TODO: Replace with your actual backend API call
-      // const response = await axios.post('/api/auth/login', { employeeId, password });
-      // const { token, role } = response.data;
+      const response = await api.post("/auth/login", {
+        email,
+        password,
+      });
+      login(email, password); // Call the login function from AuthContext
+      const { token, role } = response.data;
 
       // Mock Role-Based Routing Logic after successful login:
-      // if (role === 'admin') navigate('/admin/dashboard');
-      // else navigate('/emp/dashboard');
+      if (role === "admin") navigate("/admin/dashboard");
+      else navigate("/emp/dashboard");
 
-      console.log("Logging in with:", { employeeId, password });
+      console.log("Logging in with:", { email, password });
     } catch (error) {
-      setErrorMessage("Invalid Employee ID or Password. Please try again.");
+      setErrorMessage("Invalid Email or Password. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -56,14 +63,14 @@ export const Login = () => {
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
               <label className="block text-xs font-semibold  tracking-wider text-slate-700 mb-2">
-                Employee Code / ID
+                Email
               </label>
               <input
-                type="text"
+                type="email"
                 required
-                value={employeeId} // Bound state variable
-                onChange={(e) => setEmployeeId(e.target.value)}
-                placeholder="e.g. EMP-101"
+                value={email} // Bound state variable
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="e.g. john.doe@company.com"
                 className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all  text-sm font-medium"
               />
             </div>
