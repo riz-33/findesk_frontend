@@ -124,6 +124,10 @@ export const Login = () => {
           </form>
         </div>
       </div>
+      <footer className="mt-8 text-center text-xs text-slate-500 z-10">
+        &copy; {new Date().getFullYear()} FinDesk Finance Operations. All rights
+        reserved.
+      </footer>
     </div>
   );
 };
