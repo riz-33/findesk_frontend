@@ -193,9 +193,9 @@ export const AdminEmployees = () => {
           <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
             {[
               "ALL",
-              "Engineering",
-              "Marketing",
-              "Finance & Accounts",
+              "Information Technology",
+              "Marketing / Sales",
+              "Finance",
               "HR",
               "Operations",
             ].map((dept) => (
@@ -272,7 +272,7 @@ export const AdminEmployees = () => {
                       </span>
                     </td>
                     <td className="py-4 px-6 text-slate-500 text-xs font-medium">
-                      {emp.joinedDate}
+                      {emp.joiningDate ? new Date(emp.joiningDate).toLocaleDateString() : emp.joinedDate}
                     </td>
                     <td className="py-4 px-6 text-right">
                       <button
