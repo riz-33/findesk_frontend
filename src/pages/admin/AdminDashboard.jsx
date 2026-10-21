@@ -1,13 +1,14 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import api from "../../services/api.js";
 
 export const AdminDashboard = () => {
   // Mock data for all employee tickets across departments
   const [tickets, setTickets] = useState([
     {
-      id: "TICK-1024",
+      ticketId: "TICK-1024",
       employeeName: "Muhammad Rizwan",
       employeeId: "EMP-101",
-      department: "Engineering",
+      employeeDepartment: "Engineering",
       category: "Tax / TDS Deduction",
       subject: "Discrepancy in Q3 tax withholding certificate",
       priority: "High",
@@ -15,10 +16,10 @@ export const AdminDashboard = () => {
       date: "2026-06-10",
     },
     {
-      id: "TICK-1025",
+      ticketId: "TICK-1025",
       employeeName: "Sara Ahmed",
       employeeId: "EMP-108",
-      department: "Marketing",
+      employeeDepartment: "Marketing",
       category: "Expense Reimbursement",
       subject: "Client meeting travel expense claim",
       priority: "Medium",
@@ -26,10 +27,10 @@ export const AdminDashboard = () => {
       date: "2026-06-11",
     },
     {
-      id: "TICK-1018",
+      ticketId: "TICK-1018",
       employeeName: "Bilal Khan",
       employeeId: "EMP-045",
-      department: "Sales",
+      employeeDepartment: "Sales",
       category: "Salary / Payslip",
       subject: "May commission calculation review",
       priority: "Urgent",
@@ -37,10 +38,10 @@ export const AdminDashboard = () => {
       date: "2026-06-02",
     },
     {
-      id: "TICK-0995",
+      ticketId: "TICK-0995",
       employeeName: "Ayesha Malik",
       employeeId: "EMP-092",
-      department: "HR",
+      employeeDepartment: "HR",
       category: "Loan / Advance",
       subject: "Emergency corporate loan inquiry",
       priority: "High",
@@ -51,6 +52,7 @@ export const AdminDashboard = () => {
 
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
   // Status update handler
   const handleStatusChange = (ticketId, newStatus) => {
@@ -95,6 +97,22 @@ export const AdminDashboard = () => {
         return "text-slate-600 bg-slate-50 border-slate-200";
     }
   };
+
+  const getTickets = async () => {
+    try {
+      const response = await api.get("/tickets/all-tickets");
+      setTickets(response.data);
+      console.log("Fetched tickets:", response.data);
+      setErrorMsg("");
+    } catch (error) {
+      console.error("Error fetching tickets:", error);
+      setErrorMsg("Failed to load tickets from database.");
+    }
+  };
+
+  useEffect(() => {
+    getTickets();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -233,7 +251,7 @@ export const AdminDashboard = () => {
                       </p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs font-mono font-medium text-blue-600">
-                          {ticket.id}
+                          {ticket.ticketId}
                         </span>
                         <span className="text-slate-300">•</span>
                         <span className="text-xs text-slate-600 font-medium">
@@ -244,7 +262,7 @@ export const AdminDashboard = () => {
                     <td className="py-4 px-6 text-slate-600 text-xs font-medium">
                       {ticket.category}
                       <span className="block text-[11px] text-slate-400">
-                        {ticket.department}
+                        {ticket.employeeDepartment}
                       </span>
                     </td>
                     <td className="py-4 px-6">

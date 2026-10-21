@@ -119,12 +119,12 @@ export const EmployeeAddTicket = () => {
                 className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm font-medium"
               >
                 <option value="">Select category</option>
-                <option value="Salary">Salary / Payslip Discrepancy</option>
-                <option value="Taxes">Tax / TDS Deduction Query</option>
+                <option value="Salary">Salary / Payslip</option>
+                <option value="Taxes">Tax / TDS Deduction</option>
                 <option value="Reimbursement">
                   Expense Reimbursement (Travel/Food)
                 </option>
-                <option value="Loan">Corporate Loan / Advance</option>
+                <option value="Loan">Loan / Advance</option>
                 <option value="Other">Other Financial Inquiry</option>
               </select>
             </div>
@@ -142,7 +142,9 @@ export const EmployeeAddTicket = () => {
                 <option value="Low">Low - General Question</option>
                 <option value="Medium">Medium - Normal Processing</option>
                 <option value="High">High - Urgent Verification Needed</option>
-                <option value="Urgent">Urgent - Immediate Payroll Block</option>
+                <option value="Urgent">
+                  Urgent - Immediate Action Required
+                </option>
               </select>
             </div>
           </div>
