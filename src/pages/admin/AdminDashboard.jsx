@@ -55,10 +55,30 @@ export const AdminDashboard = () => {
   const [errorMsg, setErrorMsg] = useState("");
 
   // Status update handler
-  const handleStatusChange = (ticketId, newStatus) => {
-    setTickets((prev) =>
-      prev.map((t) => (t.id === ticketId ? { ...t, status: newStatus } : t)),
-    );
+  const handleStatusChange = async (ticketId, newStatus) => {
+    const targetId = ticketId;
+    const updatedStatus = newStatus;
+
+    try {
+      const response = await api.put(`/tickets/update-status/${targetId}`, {
+        status: updatedStatus,
+      });
+      console.log("Status updated successfully:", response.data);
+
+      setTickets((prevTickets) =>
+        prevTickets.map((ticket) => {
+          if (ticket._id === targetId || ticket.ticketId === targetId) {
+            return { ...ticket, status: updatedStatus };
+          }
+          return ticket;
+        }),
+      );
+
+      setErrorMsg("");
+    } catch (error) {
+      console.error("Error updating ticket status:", error);
+      setErrorMsg("Error updating ticket status in Database.");
+    }
   };
 
   // Filtered tickets based on search and status
@@ -282,9 +302,11 @@ export const AdminDashboard = () => {
                     <td className="py-4 px-6 text-right">
                       <select
                         value={ticket.status}
-                        onChange={(e) =>
-                          handleStatusChange(ticket.id, e.target.value)
-                        }
+                        onChange={(e) => {
+                          const selectedId = ticket._id || ticket.ticketId;
+                          const newStatus = e.target.value;
+                          handleStatusChange(selectedId, newStatus);
+                        }}
                         className="px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-medium text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer"
                       >
                         <option value="Open">Open</option>

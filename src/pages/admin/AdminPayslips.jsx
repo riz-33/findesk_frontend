@@ -1,83 +1,154 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import api from "../../services/api.js";
 
 export const AdminPayslips = () => {
-  // Mock data for existing uploaded payslips
   const [payslips, setPayslips] = useState([
     {
       id: "PAY-2026-05-101",
-      employeeName: "Muhammad Rizwan",
-      employeeId: "EMP-101",
-      month: "May 2026",
-      netSalary: "\$3,450.00",
-      uploadDate: "2026-06-01",
-      fileName: "EMP-101_May_2026_Payslip.pdf",
+      name: "Muhammad Rizwan",
+      empId: "EMP-101",
+      month: "May",
+      year: "2026",
+      netPay: "\$3,450.00",
+      createdAt: "2026-06-01",
+      fileType: "EMP-101_May_2026_Payslip.pdf",
     },
     {
       id: "PAY-2026-05-108",
-      employeeName: "Sara Ahmed",
-      employeeId: "EMP-108",
-      month: "May 2026",
-      netSalary: "\$2,900.00",
-      uploadDate: "2026-06-01",
-      fileName: "EMP-108_May_2026_Payslip.pdf",
+      name: "Sara Ahmed",
+      empId: "EMP-108",
+      month: "May",
+      year: "2026",
+
+      netPay: "\$2,900.00",
+      createdAt: "2026-06-01",
+      fileType: "EMP-108_May_2026_Payslip.pdf",
     },
     {
       id: "PAY-2026-04-101",
-      employeeName: "Muhammad Rizwan",
-      employeeId: "EMP-101",
-      month: "April 2026",
-      netSalary: "\$3,450.00",
-      uploadDate: "2026-05-01",
-      fileName: "EMP-101_April_2026_Payslip.pdf",
+      name: "Muhammad Rizwan",
+      empId: "EMP-101",
+      month: "April",
+      year: "2026",
+      netPay: "\$3,450.00",
+      createdAt: "2026-05-01",
+      fileType: "EMP-101_April_2026_Payslip.pdf",
     },
   ]);
-
+  const [loading, setLoading] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMonthFilter, setSelectedMonthFilter] = useState("ALL");
 
   // Form states for uploading new payslip
-  const [employeeId, setEmployeeId] = useState("");
-  const [payMonth, setPayMonth] = useState("June 2026");
-  const [netSalary, setNetSalary] = useState("");
+  const [userId, setUserId] = useState("");
+  const [empId, setEmpId] = useState("");
+  const [month, setMonth] = useState("October");
+  const [year, setYear] = useState(2026);
+  const [basicSalary, setBasicSalary] = useState("");
+  const [houseRentAllowance, setHouseRentAllowance] = useState("0");
+  const [utilityAllowance, setUtilityAllowance] = useState("0");
+  const [medicalAllowance, setMedicalAllowance] = useState("0");
+  const [taxDeduction, setTaxDeduction] = useState("0");
   const [payslipFile, setPayslipFile] = useState(null);
+
   const [successMsg, setSuccessMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const handleUploadSubmit = (e) => {
-    e.preventDefault();
-    if (!payslipFile) return;
-
-    const newEntry = {
-      id: `PAY-${Date.now()}`,
-      employeeName:
-        employeeId === "EMP-101" ? "Muhammad Rizwan" : "Corporate Employee",
-      employeeId: employeeId,
-      month: payMonth,
-      netSalary: `$${netSalary}`,
-      uploadDate: new Date().toISOString().split("T")[0],
-      fileName: payslipFile.name,
-    };
-
-    setPayslips([newEntry, ...payslips]);
-    setSuccessMsg("Payslip uploaded and dispatched successfully!");
-
-    setTimeout(() => {
-      setIsUploadModalOpen(false);
-      setSuccessMsg("");
-      setEmployeeId("");
-      setNetSalary("");
-      setPayslipFile(null);
-    }, 1200);
+  // 1. Fetch Payslips from Database
+  const fetchPayslips = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get("/payslips/all-payslips");
+      setPayslips(response.data);
+      console.log(response.data);
+      setErrorMsg("");
+    } catch (error) {
+      console.error("Error fetching payslips:", error);
+      setErrorMsg("Failed to load payslips from database.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Filter payslips
+  useEffect(() => {
+    fetchPayslips();
+  }, []);
+
+  // 2. Real API Form Submit Handler
+  const handleUploadSubmit = async (e) => {
+    e.preventDefault();
+    if (!payslipFile) {
+      setErrorMsg("Please select a PDF or Excel file.");
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("userId", userId);
+      formData.append("empId", empId);
+      formData.append("month", month);
+      formData.append("year", year);
+      formData.append("basicSalary", basicSalary);
+      formData.append("houseRentAllowance", houseRentAllowance);
+      formData.append("utilityAllowance", utilityAllowance);
+      formData.append("medicalAllowance", medicalAllowance);
+      formData.append("taxDeduction", taxDeduction);
+      formData.append("file", payslipFile);
+
+      await api.post("/payslips/add-payslip", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      setSuccessMsg("Payslip uploaded and dispatched successfully!");
+      fetchPayslips(); // Refresh list
+
+      setTimeout(() => {
+        setIsUploadModalOpen(false);
+        setSuccessMsg("");
+        setErrorMsg("");
+        setUserId("");
+        setEmpId("");
+        setBasicSalary("");
+        setPayslipFile(null);
+      }, 1200);
+    } catch (err) {
+      console.error("Upload error:", err);
+      setErrorMsg(err.response?.data?.error || "Failed to upload payslip.");
+    }
+  };
+
+  // 3. Real Dynamic PDF Download Handler
+  const handleDownloadPDF = async (payslipId, empId, month, year) => {
+    try {
+      const response = await api.get(`/payslips/download-pdf/${payslipId}`, {
+        responseType: "blob",
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `Payslip_${empId}_${month}_${year}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+      alert("Failed to download PDF payslip.");
+    }
+  };
+
+  // 4. Fixed Search & Month Filter
   const filteredPayslips = payslips.filter((p) => {
     const matchesMonth =
       selectedMonthFilter === "ALL" || p.month === selectedMonthFilter;
+    const name = p.userId?.name || "";
+    const employeeCode = p.empId || "";
+
     const matchesSearch =
-      p.employeeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.employeeId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.id.toLowerCase().includes(searchQuery.toLowerCase());
+      name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      employeeCode.toLowerCase().includes(searchQuery.toLowerCase());
+
     return matchesMonth && matchesSearch;
   });
 
@@ -109,7 +180,7 @@ export const AdminPayslips = () => {
               strokeLinejoin="round"
               strokeWidth="2"
               d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-            ></path>
+            />
           </svg>
           Upload New Payslip
         </button>
@@ -129,17 +200,17 @@ export const AdminPayslips = () => {
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
-            {["ALL", "June 2026", "May 2026", "April 2026"].map((month) => (
+            {["ALL", "October", "September", "August"].map((m) => (
               <button
-                key={month}
-                onClick={() => setSelectedMonthFilter(month)}
+                key={m}
+                onClick={() => setSelectedMonthFilter(m)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  selectedMonthFilter === month
+                  selectedMonthFilter === m
                     ? "bg-blue-600 text-white shadow-sm"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >
-                {month}
+                {m}
               </button>
             ))}
           </div>
@@ -150,63 +221,72 @@ export const AdminPayslips = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/70 border-b border-slate-200 text-xs font-semibold uppercase text-slate-500 tracking-wider">
-                <th className="py-3 px-6">Employee & Record ID</th>
+                <th className="py-3 px-6">Employee & ID</th>
                 <th className="py-3 px-6">Pay Cycle</th>
-                <th className="py-3 px-6">Net Salary</th>
-                <th className="py-3 px-6">Document Name</th>
-                <th className="py-3 px-6">Upload Date</th>
+                <th className="py-3 px-6">Net Pay</th>
+                <th className="py-3 px-6">Document Type</th>
+                <th className="py-3 px-6">Date Uploaded</th>
                 <th className="py-3 px-6 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 text-sm">
-              {filteredPayslips.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="6" className="py-8 text-center text-slate-500">
+                    Loading payslip records...
+                  </td>
+                </tr>
+              ) : filteredPayslips.length > 0 ? (
                 filteredPayslips.map((item) => (
                   <tr
-                    key={item.id}
+                    key={item._id}
                     className="hover:bg-slate-50/50 transition-colors"
                   >
                     <td className="py-4 px-6">
                       <p className="font-semibold text-slate-900">
-                        {item.employeeName}
+                        {item.userId?.name || "N/A"}
                       </p>
                       <span className="text-xs font-mono text-blue-600 font-medium">
-                        {item.employeeId}
+                        {item.empId}
                       </span>
                     </td>
                     <td className="py-4 px-6">
                       <span className="inline-block px-2.5 py-1 bg-slate-100 text-slate-700 text-xs font-semibold rounded-md border border-slate-200">
-                        {item.month}
+                        {item.month} {item.year}
                       </span>
                     </td>
                     <td className="py-4 px-6 font-bold text-slate-900">
-                      {item.netSalary}
+                      PKR {item.netPay?.toLocaleString()}
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
-                        <svg
-                          className="w-4 h-4 text-red-500"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            item.fileType === "PDF"
+                              ? "bg-red-100 text-red-600"
+                              : "bg-emerald-100 text-emerald-600"
+                          }`}
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                          ></path>
-                        </svg>
-                        <span className="truncate max-w-[180px]">
-                          {item.fileName}
+                          {item.fileType || "PDF"}
                         </span>
+                        {/* <span className="truncate max-w-[180px]">
+                          {item.fileUrl}
+                        </span> */}
                       </div>
                     </td>
                     <td className="py-4 px-6 text-slate-500 text-xs font-medium">
-                      {item.uploadDate}
+                      {new Date(item.createdAt).toLocaleDateString()}
                     </td>
                     <td className="py-4 px-6 text-right">
                       <button
-                        onClick={() => alert(`Downloading ${item.fileName}`)}
+                        onClick={() =>
+                          handleDownloadPDF(
+                            item._id,
+                            item.empId,
+                            item.month,
+                            item.year,
+                          )
+                        }
                         className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-semibold rounded-lg transition-all"
                       >
                         Download PDF
@@ -232,7 +312,7 @@ export const AdminPayslips = () => {
       {/* Upload Modal */}
       {isUploadModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden">
             <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <h2 className="text-lg font-bold text-slate-900">
                 Upload Employee Payslip
@@ -251,8 +331,28 @@ export const AdminPayslips = () => {
               </div>
             )}
 
+            {errorMsg && (
+              <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg font-medium text-center">
+                {errorMsg}
+              </div>
+            )}
+
             <form onSubmit={handleUploadSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+                    User Mongo ID <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={userId}
+                    onChange={(e) => setUserId(e.target.value)}
+                    placeholder="User _id"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                </div>
+
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
                     Employee ID <span className="text-red-500">*</span>
@@ -260,51 +360,67 @@ export const AdminPayslips = () => {
                   <input
                     type="text"
                     required
-                    value={employeeId}
-                    onChange={(e) => setEmployeeId(e.target.value)}
-                    placeholder="e.g. EMP-101"
+                    value={empId}
+                    onChange={(e) => setEmpId(e.target.value)}
+                    placeholder="e.g. TB0000128"
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 uppercase"
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+                    Pay Month <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={month}
+                    onChange={(e) => setMonth(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white"
+                  >
+                    <option value="October">October</option>
+                    <option value="September">September</option>
+                    <option value="August">August</option>
+                  </select>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                    Pay Cycle Month <span className="text-red-500">*</span>
+                    Pay Year <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    value={payMonth}
-                    onChange={(e) => setPayMonth(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white"
-                  >
-                    <option value="June 2026">June 2026</option>
-                    <option value="May 2026">May 2026</option>
-                    <option value="April 2026">April 2026</option>
-                  </select>
+                  <input
+                    type="number"
+                    required
+                    value={year}
+                    onChange={(e) => setYear(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Net Salary Amount <span className="text-red-500">*</span>
+                  Basic Salary (PKR) <span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="text"
+                  type="number"
                   required
-                  value={netSalary}
-                  onChange={(e) => setNetSalary(e.target.value)}
-                  placeholder="e.g. 3,450.00"
+                  value={basicSalary}
+                  onChange={(e) => setBasicSalary(e.target.value)}
+                  placeholder="e.g. 150000"
                   className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Payslip PDF Document <span className="text-red-500">*</span>
+                  Payslip File (PDF / Excel){" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="file"
                   required
-                  accept=".pdf"
+                  accept=".pdf,.xlsx,.xls"
                   onChange={(e) => setPayslipFile(e.target.files[0])}
                   className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-slate-300 rounded-lg p-1.5"
                 />

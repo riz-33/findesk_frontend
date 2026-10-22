@@ -48,14 +48,31 @@ export const AdminClaims = () => {
   const [errorMsg, setErrorMsg] = useState("");
 
   // Handle Approve or Reject
-  const handleStatusUpdate = (id, newStatus) => {
-    setClaims((prev) =>
-      prev.map((claim) =>
-        claim.id === id ? { ...claim, status: newStatus } : claim,
-      ),
-    );
-    if (selectedClaim && selectedClaim.id === id) {
-      setSelectedClaim((prev) => ({ ...prev, status: newStatus }));
+  const handleStatusUpdate = async (id, newStatus) => {
+    try {
+      const response = await api.put(`/tickets/update-status/${selectedClaim._id}`, {
+        status: newStatus,
+      });
+      console.log("Status updated successfully:", response.data);
+
+      setClaims((prevClaims) =>
+        prevClaims.map((claim) =>
+          claim._id === id || claim.id === id
+            ? { ...claim, status: newStatus }
+            : claim,
+        ),
+      );
+
+      if (
+        selectedClaim &&
+        (selectedClaim._id === id || selectedClaim.id === id)
+      ) {
+        setSelectedClaim((prev) => ({ ...prev, status: newStatus }));
+      }
+    } catch (error) {
+      console.error("Error updating ticket status:", error);
+      setErrorMsg &&
+        setErrorMsg("Status update fail. Please try again.");
     }
   };
 
