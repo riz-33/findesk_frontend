@@ -1,102 +1,177 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import api from "../../services/api.js";
 
 export const AdminTaxDeclaration = () => {
-  // Mock data for existing uploaded tax declarations
-  const [taxDeclarations, setTaxDeclarations] = useState([
+  const [taxCertificates, setTaxCertificates] = useState([
     {
       id: "TAX-2026-05-101",
       employeeName: "Muhammad Rizwan",
-      employeeId: "EMP-101",
-      month: "May 2026",
-      taxAmount: "\$345.00",
-      uploadDate: "2026-06-01",
+      empId: "EMP-101",
+      year: "May 2026",
+      taxAmount: "PKR 345.00",
+      createdAt: "2026-06-01",
       fileName: "EMP-101_May_2026_TaxDeclaration.pdf",
     },
     {
       id: "TAX-2026-05-108",
       employeeName: "Sara Ahmed",
-      employeeId: "EMP-108",
-      month: "May 2026",
-      taxAmount: "\$345.00",
-      uploadDate: "2026-06-01",
+      empId: "EMP-108",
+      year: "May 2026",
+      taxAmount: "PKR 500.00",
+      createdAt: "2026-06-01",
       fileName: "EMP-108_May_2026_TaxDeclaration.pdf",
     },
     {
       id: "TAX-2026-04-101",
       employeeName: "Muhammad Rizwan",
-      employeeId: "EMP-101",
-      month: "April 2026",
-      taxAmount: "\$345.00",
-      uploadDate: "2026-05-01",
+      empId: "EMP-101",
+      year: "April 2026",
+      taxAmount: "PKR 250.00",
+      createdAt: "2026-05-01",
       fileName: "EMP-101_April_2026_TaxDeclaration.pdf",
     },
   ]);
-
+  const [loading, setLoading] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+
+  // Search & Filters
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedMonthFilter, setSelectedMonthFilter] = useState("ALL");
+  const [selectedYear, setSelectedYear] = useState("ALL");
 
-  // Form states for uploading new tax declaration
-  const [employeeId, setEmployeeId] = useState("");
-  const [payMonth, setPayMonth] = useState("June 2026");
+  // Form States for Uploading Tax Certificate
+  const [userId, setUserId] = useState("");
+  const [empId, setEmpId] = useState("");
+  const [year, setYear] = useState("");
   const [taxAmount, setTaxAmount] = useState("");
-  const [taxDeclarationFile, setTaxDeclarationFile] = useState(null);
+  const [certFile, setCertFile] = useState(null);
+
   const [successMsg, setSuccessMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const handleUploadSubmit = (e) => {
-    e.preventDefault();
-    if (!taxDeclarationFile) return;
-
-    const newEntry = {
-      id: `TAX-${Date.now()}`,
-      employeeName:
-        employeeId === "EMP-101" ? "Muhammad Rizwan" : "Corporate Employee",
-      employeeId: employeeId,
-      month: payMonth,
-      taxAmount: `$${taxAmount}`,
-      uploadDate: new Date().toISOString().split("T")[0],
-      fileName: taxDeclarationFile.name,
-    };
-
-    setTaxDeclarations([newEntry, ...taxDeclarations]);
-    setSuccessMsg("Tax declaration uploaded and dispatched successfully!");
-
-    setTimeout(() => {
-      setIsUploadModalOpen(false);
-      setSuccessMsg("");
-      setEmployeeId("");
-      setTaxAmount("");
-      setTaxDeclarationFile(null);
-    }, 1200);
+  // 1. Fetch Tax Certificates from Database
+  const fetchCertificates = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get("/taxcertificate/all");
+      setTaxCertificates(response.data);
+      setErrorMsg("");
+    } catch (error) {
+      console.error("Error fetching tax certificates:", error);
+      setErrorMsg("Failed to load tax certificates from database.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Filter tax declarations
-  const filteredTaxDeclarations = taxDeclarations.filter((t) => {
-    const matchesMonth =
-      selectedMonthFilter === "ALL" || t.month === selectedMonthFilter;
+  useEffect(() => {
+    fetchCertificates();
+  }, []);
+
+  // 2. Handle Tax Certificate Upload
+  const handleUploadSubmit = async (e) => {
+    e.preventDefault();
+    if (!certFile) {
+      setErrorMsg("Please select a PDF file.");
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("empId", empId);
+      formData.append("year", year);
+      formData.append("taxAmount", taxAmount);
+      formData.append("file", certFile);
+
+      await api.post("/taxcertificate/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      setSuccessMsg("Tax certificate uploaded successfully!");
+      fetchCertificates(); // Refresh list
+
+      setTimeout(() => {
+        setIsUploadModalOpen(false);
+        setSuccessMsg("");
+        setErrorMsg("");
+        setUserId("");
+        setEmpId("");
+        setCertFile(null);
+      }, 1200);
+    } catch (err) {
+      console.error("Upload error:", err);
+      setErrorMsg(
+        err.response?.data?.error || "Failed to upload tax certificate.",
+      );
+    }
+  };
+
+  // 3. Delete Tax Certificate
+  const handleDelete = async (id) => {
+    if (
+      !window.confirm("Are you sure you want to delete this tax certificate?")
+    )
+      return;
+
+    try {
+      await api.delete(`/taxcertificate/${id}`);
+      setTaxCertificates((prev) => prev.filter((item) => item._id !== id));
+      alert("Tax certificate deleted successfully.");
+    } catch (error) {
+      console.error("Error deleting record:", error);
+      alert(error.response?.data?.error || "Failed to delete record.");
+    }
+  };
+
+  // 4. Download PDF Handler
+  const handleDownloadPDF = async (certId, empId, year) => {
+    try {
+      const response = await api.get(`/taxcertificate/download/${certId}`, {
+        responseType: "blob",
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `Tax_Certificate_${year}_${empId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+      alert("Failed to download tax certificate PDF.");
+    }
+  };
+
+  // Filters
+  const filteredCertificates = taxCertificates.filter((t) => {
+    const matchesYear =
+      selectedYear === "ALL" || String(t.year) === String(selectedYear);
+
+    const name = t.userId?.name || "";
+    const employeeCode = t.empId || "";
+
     const matchesSearch =
-      t.employeeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.employeeId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.id.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesMonth && matchesSearch;
+      name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      employeeCode.toLowerCase().includes(searchQuery.toLowerCase());
+
+    return matchesYear && matchesSearch;
   });
 
   return (
     <div className="space-y-6">
-      {/* Top Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
         <div>
           <h1 className="text-xl font-bold text-slate-900">
-            Payslip Management & Distribution
+            Tax Certificate Management & Distribution
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Upload monthly salary statements and tax deduction breakdowns for
-            employee portals.
+            Upload and manage employee tax declaration certificates for portal
+            access.
           </p>
         </div>
         <button
           onClick={() => setIsUploadModalOpen(true)}
-          className="inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium text-sm rounded-xl shadow-sm shadow-blue-600/20 transition-all gap-2"
+          className="inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium text-sm rounded-xl shadow-sm transition-all gap-2"
         >
           <svg
             className="w-4 h-4"
@@ -109,7 +184,7 @@ export const AdminTaxDeclaration = () => {
               strokeLinejoin="round"
               strokeWidth="2"
               d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-            ></path>
+            />
           </svg>
           Upload Tax Declaration
         </button>
@@ -117,100 +192,101 @@ export const AdminTaxDeclaration = () => {
 
       {/* Filters & Search Bar */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="w-full sm:w-80">
+        <div className="p-5 border-b border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="w-full md:w-80">
             <input
               type="text"
               placeholder="Search by Employee ID or Name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
-            {["ALL", "June 2026", "May 2026", "April 2026"].map((month) => (
-              <button
-                key={month}
-                onClick={() => setSelectedMonthFilter(month)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  selectedMonthFilter === month
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                {month}
-              </button>
-            ))}
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="px-3.5 py-2 rounded-lg border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+            >
+              <option value="ALL">All Years</option>
+              <option value="2022">2022</option>
+              <option value="2023">2023</option>
+              <option value="2024">2024</option>
+              <option value="2025">2025</option>
+              <option value="2026">2026</option>
+            </select>
           </div>
         </div>
 
-        {/* Tax Declarations Table */}
+        {/* Tax Certificates Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/70 border-b border-slate-200 text-xs font-semibold uppercase text-slate-500 tracking-wider">
-                <th className="py-3 px-6">Employee & Record ID</th>
-                <th className="py-3 px-6">Pay Cycle</th>
+                <th className="py-3 px-6">Employee & ID</th>
+                <th className="py-3 px-6">Tax Year</th>
                 <th className="py-3 px-6">Tax Amount</th>
-                <th className="py-3 px-6">Document Name</th>
+                <th className="py-3 px-6">Document</th>
                 <th className="py-3 px-6">Upload Date</th>
                 <th className="py-3 px-6 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 text-sm">
-              {filteredTaxDeclarations.length > 0 ? (
-                filteredTaxDeclarations.map((item) => (
+              {loading ? (
+                <tr>
+                  <td colSpan="6" className="py-8 text-center text-slate-500">
+                    Loading records...
+                  </td>
+                </tr>
+              ) : filteredCertificates.length > 0 ? (
+                filteredCertificates.map((item) => (
                   <tr
-                    key={item.id}
+                    key={item._id}
                     className="hover:bg-slate-50/50 transition-colors"
                   >
                     <td className="py-4 px-6">
                       <p className="font-semibold text-slate-900">
-                        {item.employeeName}
+                        {item.userId?.name || "N/A"}
                       </p>
                       <span className="text-xs font-mono text-blue-600 font-medium">
-                        {item.employeeId}
+                        {item.empId}
                       </span>
                     </td>
                     <td className="py-4 px-6">
                       <span className="inline-block px-2.5 py-1 bg-slate-100 text-slate-700 text-xs font-semibold rounded-md border border-slate-200">
-                        {item.month}
+                        {item.year}
                       </span>
                     </td>
                     <td className="py-4 px-6 font-bold text-slate-900">
                       {item.taxAmount}
                     </td>
                     <td className="py-4 px-6">
-                      <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
-                        <svg
-                          className="w-4 h-4 text-red-500"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                          ></path>
-                        </svg>
-                        <span className="truncate max-w-[180px]">
-                          {item.fileName}
-                        </span>
-                      </div>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-600">
+                        PDF
+                      </span>
                     </td>
                     <td className="py-4 px-6 text-slate-500 text-xs font-medium">
-                      {item.uploadDate}
+                      {new Date(item.createdAt).toLocaleDateString()}
                     </td>
                     <td className="py-4 px-6 text-right">
-                      <button
-                        onClick={() => alert(`Downloading ${item.fileName}`)}
-                        className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-semibold rounded-lg transition-all"
-                      >
-                        Download PDF
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() =>
+                            handleDownloadPDF(item._id, item.empId, item.year)
+                          }
+                          className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-semibold rounded-lg transition-all"
+                        >
+                          Download PDF
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item._id)}
+                          className="px-2.5 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 text-xs font-semibold rounded-lg transition-all"
+                          title="Delete Record"
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -220,7 +296,7 @@ export const AdminTaxDeclaration = () => {
                     colSpan="6"
                     className="py-8 text-center text-slate-400 text-sm"
                   >
-                    No tax declaration records found matching your filters.
+                    No tax certificate records found.
                   </td>
                 </tr>
               )}
@@ -232,82 +308,83 @@ export const AdminTaxDeclaration = () => {
       {/* Upload Modal */}
       {isUploadModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden">
             <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <h2 className="text-lg font-bold text-slate-900">
                 Upload Employee Tax Declaration
               </h2>
               <button
                 onClick={() => setIsUploadModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 flex items-center justify-center text-slate-700 font-bold transition-all"
+                className="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 flex items-center justify-center text-slate-700 font-bold"
               >
                 ✕
               </button>
             </div>
 
             {successMsg && (
-              <div className="mx-6 mt-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs rounded-lg font-medium text-center">
+              <div className="mx-6 mt-4 p-3 bg-emerald-50 text-emerald-600 text-xs rounded-lg font-medium text-center">
                 {successMsg}
+              </div>
+            )}
+            {errorMsg && (
+              <div className="mx-6 mt-4 p-3 bg-red-50 text-red-600 text-xs rounded-lg font-medium text-center">
+                {errorMsg}
               </div>
             )}
 
             <form onSubmit={handleUploadSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                    Employee ID <span className="text-red-500">*</span>
+                  <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
+                    Employee ID *
                   </label>
                   <input
                     type="text"
                     required
-                    value={employeeId}
-                    onChange={(e) => setEmployeeId(e.target.value)}
-                    placeholder="e.g. EMP-101"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 uppercase"
+                    value={empId}
+                    onChange={(e) => setEmpId(e.target.value)}
+                    placeholder="e.g. TB0000128"
+                    className="w-full px-3 py-2 rounded-lg border text-sm uppercase"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                    Pay Cycle Month <span className="text-red-500">*</span>
+                  <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
+                    Year *
                   </label>
-                  <select
-                    value={payMonth}
-                    onChange={(e) => setPayMonth(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white"
-                  >
-                    <option value="June 2026">June 2026</option>
-                    <option value="May 2026">May 2026</option>
-                    <option value="April 2026">April 2026</option>
-                  </select>
+                  <input
+                    type="number"
+                    required
+                    value={year}
+                    onChange={(e) => setYear(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border text-sm"
+                  />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Tax Amount <span className="text-red-500">*</span>
+                <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
+                  Tax Amount Selection *
                 </label>
                 <input
-                  type="text"
+                  type="number"
                   required
                   value={taxAmount}
                   onChange={(e) => setTaxAmount(e.target.value)}
-                  placeholder="e.g. 3,450.00"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  className="w-full px-3 py-2 rounded-lg border text-sm"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Tax Declaration PDF Document{" "}
-                  <span className="text-red-500">*</span>
+                <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
+                  Tax Declaration PDF Document *
                 </label>
                 <input
                   type="file"
                   required
                   accept=".pdf"
-                  onChange={(e) => setTaxDeclarationFile(e.target.files[0])}
-                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-slate-300 rounded-lg p-1.5"
+                  onChange={(e) => setCertFile(e.target.files[0])}
+                  className="w-full text-xs text-slate-500 border rounded-lg p-1.5 cursor-pointer"
                 />
               </div>
 
@@ -315,13 +392,13 @@ export const AdminTaxDeclaration = () => {
                 <button
                   type="button"
                   onClick={() => setIsUploadModalOpen(false)}
-                  className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-all"
+                  className="px-4 py-2 border rounded-xl text-xs font-semibold text-slate-600"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold"
                 >
                   Upload & Dispatch
                 </button>

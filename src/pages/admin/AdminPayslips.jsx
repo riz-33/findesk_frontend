@@ -37,8 +37,10 @@ export const AdminPayslips = () => {
   ]);
   const [loading, setLoading] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedMonthFilter, setSelectedMonthFilter] = useState("ALL");
+  const [selectedMonth, setSelectedMonth] = useState("ALL");
+  const [selectedYear, setSelectedYear] = useState("ALL");
 
   // Form states for uploading new payslip
   const [userId, setUserId] = useState("");
@@ -51,6 +53,11 @@ export const AdminPayslips = () => {
   const [medicalAllowance, setMedicalAllowance] = useState("0");
   const [taxDeduction, setTaxDeduction] = useState("0");
   const [payslipFile, setPayslipFile] = useState(null);
+
+  // Bulk Upload Form States
+  const [bulkFile, setBulkFile] = useState(null);
+  const [bulkSummary, setBulkSummary] = useState(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -74,6 +81,20 @@ export const AdminPayslips = () => {
   useEffect(() => {
     fetchPayslips();
   }, []);
+
+  const handleDeletePayslip = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this payslip?"))
+      return;
+
+    try {
+      await api.delete(`/payslips/${id}`);
+      setPayslips((prev) => prev.filter((item) => item._id !== id));
+      alert("Payslip deleted successfully.");
+    } catch (error) {
+      console.error("Error deleting payslip:", error);
+      alert(error.response?.data?.error || "Failed to delete payslip.");
+    }
+  };
 
   // 2. Real API Form Submit Handler
   const handleUploadSubmit = async (e) => {
@@ -118,6 +139,35 @@ export const AdminPayslips = () => {
     }
   };
 
+  // 3. Bulk Excel Upload Handler
+  const handleBulkUploadSubmit = async (e) => {
+    e.preventDefault();
+    if (!bulkFile) {
+      setErrorMsg("Please select an Excel file (.xlsx / .xls).");
+      return;
+    }
+
+    setBulkLoading(true);
+    setErrorMsg("");
+    try {
+      const formData = new FormData();
+      formData.append("excelFile", bulkFile);
+
+      const response = await api.post("/payslips/bulk-upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      setBulkSummary(response.data.summary);
+      setSuccessMsg(response.data.message);
+      fetchPayslips(); // Refresh list
+    } catch (err) {
+      console.error("Bulk upload error:", err);
+      setErrorMsg(err.response?.data?.error || "Bulk upload failed.");
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
   // 3. Real Dynamic PDF Download Handler
   const handleDownloadPDF = async (payslipId, empId, month, year) => {
     try {
@@ -138,10 +188,11 @@ export const AdminPayslips = () => {
     }
   };
 
-  // 4. Fixed Search & Month Filter
   const filteredPayslips = payslips.filter((p) => {
-    const matchesMonth =
-      selectedMonthFilter === "ALL" || p.month === selectedMonthFilter;
+    const matchesMonth = selectedMonth === "ALL" || p.month === selectedMonth;
+    const matchesYear =
+      selectedYear === "ALL" || String(p.year) === String(selectedYear);
+
     const name = p.userId?.name || "";
     const employeeCode = p.empId || "";
 
@@ -149,8 +200,23 @@ export const AdminPayslips = () => {
       name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       employeeCode.toLowerCase().includes(searchQuery.toLowerCase());
 
-    return matchesMonth && matchesSearch;
+    return matchesMonth && matchesYear && matchesSearch;
   });
+
+  const monthsList = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
 
   return (
     <div className="space-y-6">
@@ -161,58 +227,83 @@ export const AdminPayslips = () => {
             Payslip Management & Distribution
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Upload monthly salary statements and tax deduction breakdowns for
-            employee portals.
+            Upload individual or bulk Excel salary statements for employees.
           </p>
         </div>
-        <button
-          onClick={() => setIsUploadModalOpen(true)}
-          className="inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium text-sm rounded-xl shadow-sm shadow-blue-600/20 transition-all gap-2"
-        >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setBulkSummary(null);
+              setBulkFile(null);
+              setIsBulkModalOpen(true);
+            }}
+            className="inline-flex items-center justify-center px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-xl shadow-sm transition-all gap-2"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-            />
-          </svg>
-          Upload New Payslip
-        </button>
+            📊 Bulk Excel Upload
+          </button>
+
+          <button
+            onClick={() => setIsUploadModalOpen(true)}
+            className="inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium text-sm rounded-xl shadow-sm shadow-blue-600/20 transition-all gap-2"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+              />
+            </svg>
+            Upload Single Payslip
+          </button>
+        </div>
       </div>
 
-      {/* Filters & Search Bar */}
+      {/* Dynamic Filters Section */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="w-full sm:w-80">
+        <div className="p-5 border-b border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="w-full md:w-80">
             <input
               type="text"
               placeholder="Search by Employee ID or Name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
-            {["ALL", "October", "September", "August"].map((m) => (
-              <button
-                key={m}
-                onClick={() => setSelectedMonthFilter(m)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  selectedMonthFilter === m
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                {m}
-              </button>
-            ))}
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            {/* Month Dropdown Filter */}
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="px-3.5 py-2 rounded-lg border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+            >
+              <option value="ALL">All Months</option>
+              {monthsList.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+
+            {/* Year Dropdown Filter */}
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="px-3.5 py-2 rounded-lg border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+            >
+              <option value="ALL">All Years</option>
+              <option value="2026">2026</option>
+              <option value="2025">2025</option>
+            </select>
           </div>
         </div>
 
@@ -224,7 +315,7 @@ export const AdminPayslips = () => {
                 <th className="py-3 px-6">Employee & ID</th>
                 <th className="py-3 px-6">Pay Cycle</th>
                 <th className="py-3 px-6">Net Pay</th>
-                <th className="py-3 px-6">Document Type</th>
+                <th className="py-3 px-6">Type</th>
                 <th className="py-3 px-6">Date Uploaded</th>
                 <th className="py-3 px-6 text-right">Actions</th>
               </tr>
@@ -233,7 +324,7 @@ export const AdminPayslips = () => {
               {loading ? (
                 <tr>
                   <td colSpan="6" className="py-8 text-center text-slate-500">
-                    Loading payslip records...
+                    Loading records...
                   </td>
                 </tr>
               ) : filteredPayslips.length > 0 ? (
@@ -259,38 +350,45 @@ export const AdminPayslips = () => {
                       PKR {item.netPay?.toLocaleString()}
                     </td>
                     <td className="py-4 px-6">
-                      <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            item.fileType === "PDF"
-                              ? "bg-red-100 text-red-600"
-                              : "bg-emerald-100 text-emerald-600"
-                          }`}
-                        >
-                          {item.fileType || "PDF"}
-                        </span>
-                        {/* <span className="truncate max-w-[180px]">
-                          {item.fileUrl}
-                        </span> */}
-                      </div>
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          item.fileType === "PDF"
+                            ? "bg-red-100 text-red-600"
+                            : "bg-emerald-100 text-emerald-600"
+                        }`}
+                      >
+                        {item.fileType || "PDF"}
+                      </span>
                     </td>
                     <td className="py-4 px-6 text-slate-500 text-xs font-medium">
                       {new Date(item.createdAt).toLocaleDateString()}
                     </td>
                     <td className="py-4 px-6 text-right">
-                      <button
-                        onClick={() =>
-                          handleDownloadPDF(
-                            item._id,
-                            item.empId,
-                            item.month,
-                            item.year,
-                          )
-                        }
-                        className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-semibold rounded-lg transition-all"
-                      >
-                        Download PDF
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        {/* Download PDF Button */}
+                        <button
+                          onClick={() =>
+                            handleDownloadPDF(
+                              item._id,
+                              item.empId,
+                              item.month,
+                              item.year,
+                            )
+                          }
+                          className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-semibold rounded-lg transition-all"
+                        >
+                          Download PDF
+                        </button>
+
+                        {/* Delete Action Button */}
+                        <button
+                          onClick={() => handleDeletePayslip(item._id)}
+                          className="px-2.5 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 text-xs font-semibold rounded-lg transition-all"
+                          title="Delete Payslip"
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -300,7 +398,7 @@ export const AdminPayslips = () => {
                     colSpan="6"
                     className="py-8 text-center text-slate-400 text-sm"
                   >
-                    No payslip records found matching your filters.
+                    No payslips found.
                   </td>
                 </tr>
               )}
@@ -309,136 +407,210 @@ export const AdminPayslips = () => {
         </div>
       </div>
 
-      {/* Upload Modal */}
+      {/* 1. SINGLE UPLOAD MODAL */}
       {isUploadModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden">
             <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <h2 className="text-lg font-bold text-slate-900">
-                Upload Employee Payslip
+                Upload Single Payslip
               </h2>
               <button
                 onClick={() => setIsUploadModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 flex items-center justify-center text-slate-700 font-bold transition-all"
+                className="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 font-bold"
               >
                 ✕
               </button>
             </div>
-
             {successMsg && (
-              <div className="mx-6 mt-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs rounded-lg font-medium text-center">
+              <div className="mx-6 mt-4 p-3 bg-emerald-50 text-emerald-600 text-xs rounded-lg text-center font-medium">
                 {successMsg}
               </div>
             )}
-
             {errorMsg && (
-              <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg font-medium text-center">
+              <div className="mx-6 mt-4 p-3 bg-red-50 text-red-600 text-xs rounded-lg text-center font-medium">
                 {errorMsg}
               </div>
             )}
 
             <form onSubmit={handleUploadSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                    User Mongo ID <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={userId}
-                    onChange={(e) => setUserId(e.target.value)}
-                    placeholder="User _id"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                    Employee ID <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={empId}
-                    onChange={(e) => setEmpId(e.target.value)}
-                    placeholder="e.g. TB0000128"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 uppercase"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
+                  Employee ID *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={empId}
+                  onChange={(e) => setEmpId(e.target.value)}
+                  placeholder="e.g. TB0000128"
+                  className="w-full px-3 py-2 rounded-lg border text-sm uppercase"
+                />
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                    Pay Month <span className="text-red-500">*</span>
+                  <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
+                    Month *
                   </label>
                   <select
                     value={month}
                     onChange={(e) => setMonth(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white"
+                    className="w-full px-3 py-2 rounded-lg border text-sm bg-white"
                   >
-                    <option value="October">October</option>
-                    <option value="September">September</option>
+                    <option value="January">January</option>
+                    <option value="February">February</option>
+                    <option value="March">March</option>
+                    <option value="April">April</option>
+                    <option value="May">May</option>
+                    <option value="June">June</option>
+                    <option value="July">July</option>
                     <option value="August">August</option>
+                    <option value="September">September</option>
+                    <option value="October">October</option>
+                    <option value="November">November</option>
+                    <option value="December">December</option>
                   </select>
                 </div>
-
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                    Pay Year <span className="text-red-500">*</span>
+                  <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
+                    Year *
                   </label>
                   <input
                     type="number"
                     required
                     value={year}
                     onChange={(e) => setYear(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    className="w-full px-3 py-2 rounded-lg border text-sm"
                   />
                 </div>
               </div>
-
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Basic Salary (PKR) <span className="text-red-500">*</span>
+                <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
+                  Net Salary (PKR) *
                 </label>
                 <input
                   type="number"
                   required
                   value={basicSalary}
                   onChange={(e) => setBasicSalary(e.target.value)}
-                  placeholder="e.g. 150000"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  placeholder="150000"
+                  className="w-full px-3 py-2 rounded-lg border text-sm"
                 />
               </div>
-
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Payslip File (PDF / Excel){" "}
-                  <span className="text-red-500">*</span>
+                <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
+                  Payslip File (PDF / Excel) *
                 </label>
                 <input
                   type="file"
                   required
                   accept=".pdf,.xlsx,.xls"
                   onChange={(e) => setPayslipFile(e.target.files[0])}
-                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-slate-300 rounded-lg p-1.5"
+                  className="w-full text-xs border rounded-lg p-1.5"
                 />
               </div>
-
               <div className="pt-2 flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsUploadModalOpen(false)}
-                  className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-all"
+                  className="px-4 py-2 border rounded-xl text-xs font-semibold text-slate-600"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold"
                 >
-                  Upload & Dispatch
+                  Upload
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 2. BULK EXCEL UPLOAD MODAL */}
+      {isBulkModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden">
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-emerald-50">
+              <h2 className="text-lg font-bold text-emerald-900">
+                Bulk Upload Payslips (Excel)
+              </h2>
+              <button
+                onClick={() => setIsBulkModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-emerald-200 hover:bg-emerald-300 font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {successMsg && (
+              <div className="mx-6 mt-4 p-3 bg-emerald-50 text-emerald-700 text-xs rounded-lg text-center font-medium">
+                {successMsg}
+              </div>
+            )}
+            {errorMsg && (
+              <div className="mx-6 mt-4 p-3 bg-red-50 text-red-600 text-xs rounded-lg text-center font-medium">
+                {errorMsg}
+              </div>
+            )}
+
+            <form onSubmit={handleBulkUploadSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
+                  Select Excel Sheet (.xlsx / .xls) *
+                </label>
+                <input
+                  type="file"
+                  required
+                  accept=".xlsx,.xls,.csv"
+                  onChange={(e) => setBulkFile(e.target.files[0])}
+                  className="w-full text-xs border rounded-lg p-1.5 cursor-pointer"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Make sure columns include: empId, month, year, basicSalary,
+                  taxDeduction, etc.
+                </p>
+              </div>
+
+              {bulkSummary && (
+                <div className="p-3 bg-slate-50 border rounded-lg text-xs space-y-1 text-slate-700">
+                  <p>
+                    <strong>Total Rows:</strong> {bulkSummary.totalRows}
+                  </p>
+                  <p>
+                    <strong>Processed Successfully:</strong>{" "}
+                    {bulkSummary.processed}
+                  </p>
+                  <p>
+                    <strong>Skipped:</strong> {bulkSummary.skipped}
+                  </p>
+                  {bulkSummary.errors?.length > 0 && (
+                    <div className="text-red-500 max-h-24 overflow-y-auto">
+                      <p className="font-bold">Errors:</p>
+                      {bulkSummary.errors.map((err, i) => (
+                        <p key={i}>- {err}</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="pt-2 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsBulkModalOpen(false)}
+                  className="px-4 py-2 border rounded-xl text-xs font-semibold text-slate-600"
+                >
+                  Close
+                </button>
+                <button
+                  type="submit"
+                  disabled={bulkLoading}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold"
+                >
+                  {bulkLoading ? "Processing Excel..." : "Upload & Parse Excel"}
                 </button>
               </div>
             </form>
