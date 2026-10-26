@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
+import { AuthContext } from "../../context/AuthContext";
 
 export const EmployeeProfile = () => {
   // Mock logged-in employee profile data
@@ -39,6 +40,9 @@ export const EmployeeProfile = () => {
     setNewPassword("");
     setTimeout(() => setPasswordMsg(""), 3000);
   };
+
+  const { user } = useContext(AuthContext);
+  console.log(user);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

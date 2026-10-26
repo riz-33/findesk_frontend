@@ -6,6 +6,7 @@ import "./App.css";
 import { Login } from "./pages/auth/Login";
 import { Register } from "./pages/auth/Register";
 
+import { AuthProvider } from "./context/AuthContext";
 import AppLayout from "./components/layout/AppLayout";
 
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
@@ -23,38 +24,40 @@ import { EmployeeAddTicket } from "./pages/employee/EmployeeAddTicket";
 
 function App() {
   return (
-    <Router>
-      <SpeedInsights />
-      <Analytics />
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+    <AuthProvider>
+      <Router>
+        <SpeedInsights />
+        <Analytics />
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
-        <Route element={<AppLayout />}>
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/employees" element={<AdminEmployees />} />
-          <Route path="/admin/payslips" element={<AdminPayslips />} />
-          <Route
-            path="/admin/tax-declarations"
-            element={<AdminTaxDeclaration />}
-          />
-          <Route path="/admin/claims" element={<AdminClaims />} />
+          <Route element={<AppLayout />}>
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/employees" element={<AdminEmployees />} />
+            <Route path="/admin/payslips" element={<AdminPayslips />} />
+            <Route
+              path="/admin/tax-declarations"
+              element={<AdminTaxDeclaration />}
+            />
+            <Route path="/admin/claims" element={<AdminClaims />} />
 
-          <Route path="/emp/dashboard" element={<EmployeeDashboard />} />
-          <Route path="/emp/payslips" element={<EmployeePayslips />} />
-          <Route
-            path="/emp/tax-certificate"
-            element={<EmployeeTaxCertificate />}
-          />
-          <Route path="/emp/add-ticket" element={<EmployeeAddTicket />} />
-          <Route path="/emp/claims" element={<EmployeeClaims />} />
+            <Route path="/emp/dashboard" element={<EmployeeDashboard />} />
+            <Route path="/emp/payslips" element={<EmployeePayslips />} />
+            <Route
+              path="/emp/tax-certificate"
+              element={<EmployeeTaxCertificate />}
+            />
+            <Route path="/emp/add-ticket" element={<EmployeeAddTicket />} />
+            <Route path="/emp/claims" element={<EmployeeClaims />} />
 
-          <Route path="/emp/profile" element={<EmployeeProfile />} />
+            <Route path="/emp/profile" element={<EmployeeProfile />} />
 
-          <Route path="*" element={<div>404 Not Found</div>} />
-        </Route>
-      </Routes>
-    </Router>
+            <Route path="*" element={<div>404 Not Found</div>} />
+          </Route>
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 

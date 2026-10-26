@@ -1,38 +1,51 @@
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api.js";
-// import { AuthContext } from "../../context/AuthContext.jsx";
-import { Link } from "react-router-dom";
+import { AuthContext } from "../../context/AuthContext";
+import Logo from "../../assets/logo.png";
+import Title from "../../assets/title.png";
 
 export const Login = () => {
-  const [email, setEmail] = useState("");
+  const [empId, setEmpId] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  // const { login } = useContext(AuthContext);
 
+  // AuthContext se login function extract karein
+  const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    // setErrorMessage("");
+    setErrorMessage("");
 
     try {
+      // FIXED: Sending { empId, password } instead of incorrect FormData object
       const response = await api.post("/auth/login", {
-        email,
+        empId,
         password,
       });
-      login(email, password); // Call the login function from AuthContext
-      const { token, role } = response.data;
 
-      // Mock Role-Based Routing Logic after successful login:
-      if (role === "admin") navigate("/admin/dashboard");
-      else navigate("/emp/dashboard");
+      console.log("Login response:", response.data);
 
-      console.log("Logging in with:", { email, password });
+      // Call login function from context (stores token & user info)
+      login(response.data);
+
+      const { role } = response.data;
+
+      // Role-based navigation
+      if (role === "admin") {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/emp/dashboard");
+      }
     } catch (error) {
-      setErrorMessage("Invalid Email or Password. Please try again.");
+      console.error("Login error:", error);
+      setErrorMessage(
+        error.response?.data?.error ||
+          "Invalid Employee ID or Password. Please try again.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -42,16 +55,19 @@ export const Login = () => {
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white rounded-2xl shadow-xl border border-slate-200/80 p-8">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-600 text-white font-bold text-xl mb-3 shadow-md shadow-blue-600/20">
-              F
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center justify-center w-full mb-3">
+              <img
+                src={Logo}
+                alt="Findesk Logo"
+                className="h-16 w-auto object-contain"
+              />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-              FinDesk
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Employee Self-Service & Payroll Portal
-            </p>
+            <img
+              src={Title}
+              alt="Findesk Title"
+              className="mx-auto h-6 w-auto object-contain"
+            />
           </div>
 
           {errorMessage && (
@@ -62,27 +78,27 @@ export const Login = () => {
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="block text-xs font-semibold  tracking-wider text-slate-700 mb-2">
-                Email
+              <label className="block text-xs font-semibold tracking-wider text-slate-700 mb-2">
+                Employee ID
               </label>
               <input
-                type="email"
+                type="text"
                 required
-                value={email} // Bound state variable
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="e.g. john.doe@company.com"
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all  text-sm font-medium"
+                value={empId}
+                onChange={(e) => setEmpId(e.target.value)}
+                placeholder="e.g. TB0000101"
+                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all text-sm font-medium uppercase"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold  tracking-wider text-slate-700 mb-2">
+              <label className="block text-xs font-semibold tracking-wider text-slate-700 mb-2">
                 Password
               </label>
               <input
                 type="password"
                 required
-                value={password} // Bound state variable
+                value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all text-sm"
@@ -91,7 +107,7 @@ export const Login = () => {
 
             <button
               type="submit"
-              disabled={isLoading} // Reactivated loading state disable rule
+              disabled={isLoading}
               className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium text-sm rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (

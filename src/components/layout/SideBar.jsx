@@ -1,13 +1,13 @@
-import React from "react";
+import React, { useContext } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { AuthContext } from "../../context/AuthContext";
 
-export const Sidebar = ({
-  user = { name: "User", employeeId: "EMP-000", role: "EMPLOYEE" },
-}) => {
+export const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const userRole = user.role.toUpperCase();
+  const { user, logout } = useContext(AuthContext);
+  const userRole = user?.role ? user.role.toUpperCase() : "EMPLOYEE";
 
   // Navigation Links based on Role
   const adminLinks = [
@@ -29,9 +29,8 @@ export const Sidebar = ({
   const navLinks = userRole === "ADMIN" ? adminLinks : employeeLinks;
 
   const handleSignOut = () => {
-    // Clear localStorage or Auth token here
-    localStorage.removeItem("token");
-    navigate("/login");
+    logout();
+    navigate("/");
   };
 
   return (
@@ -52,7 +51,6 @@ export const Sidebar = ({
           </span>
         </div>
 
-        {/* Uncommented and fixed active state logic using useLocation */}
         <nav className="px-3 space-y-1">
           {navLinks.map((link) => {
             const isActive = location.pathname === link.href;
@@ -75,12 +73,16 @@ export const Sidebar = ({
 
       <div className="p-4 border-t border-slate-800">
         <div className="mb-3 px-2">
-          <p className="text-sm font-medium text-white truncate">{user.name}</p>
-          <p className="text-xs text-slate-500 font-mono">{user.employeeId}</p>
+          <p className="text-sm font-medium text-white truncate">
+            {user?.name || "User"}
+          </p>
+          <p className="text-xs text-slate-500 font-mono">
+            {user?.empId || ""}
+          </p>
         </div>
         <button
           onClick={handleSignOut}
-          className="w-full text-left text-xs font-medium text-slate-400 hover:text-red-400 hover:bg-slate-800 px-3 py-2 rounded-lg transition-all"
+          className="w-full text-left text-xs font-medium text-slate-400 hover:text-red-400 hover:bg-slate-800 px-3 py-2 rounded-lg transition-all cursor-pointer"
         >
           Sign Out
         </button>
