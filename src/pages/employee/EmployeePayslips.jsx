@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
+import api from "../../services/api.js";
+import { AuthContext } from "../../context/AuthContext.jsx";
 
 export const EmployeePayslips = () => {
   // Mock payslip data for the logged-in employee
-  const [payslips] = useState([
+  const [payslips, setPayslips] = useState([
     {
       id: "PAY-2026-06",
       month: "June 2026",
@@ -53,16 +55,71 @@ export const EmployeePayslips = () => {
     },
   ]);
 
-  const [selectedPayslip, setSelectedPayslip] = useState(null); // Detail modal
+  const [selectedPayslip, setSelectedPayslip] = useState(null);
+  const [taxYTD, setTaxYTD] = useState([]);
+  const { user } = useContext(AuthContext);
+
+  const fetchPayslips = async () => {
+    try {
+      const response = await api.get("/payslips/my-payslips");
+      setPayslips(response.data);
+      console.log(response.data);
+      console.log(taxYTD.data);
+      // setErrorMsg("");
+    } catch (error) {
+      console.error("Error fetching payslips:", error);
+      // setErrorMsg("Failed to load payslips from database.");
+    }
+  };
+
+  const fetchEmployeeTaxSummary = async (year = 2026) => {
+    try {
+      const response = await api.get(
+        `/payslips/summary/${user.empId}?year=${year}`,
+      );
+      setTaxYTD(response.data);
+      console.log("Cumulative Salary & Tax:", response.data);
+      // { totalGrossEarnings, totalTaxDeducted, totalNetPay, payslipsCount }
+    } catch (error) {
+      console.error("Error fetching summary:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchPayslips();
+    fetchEmployeeTaxSummary();
+  }, []);
+
+  const handleDownloadPDF = async (payslipId, empId, month, year) => {
+    try {
+      const response = await api.get(`/payslips/download-pdf/${payslipId}`, {
+        responseType: "blob",
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `Payslip_${empId}_${month}_${year}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+      alert("Failed to download PDF payslip.");
+    }
+  };
 
   return (
     <div className="space-y-6">
       {/* Top Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">My Payslips & Salary Statements</h1>
+          <h1 className="text-xl font-bold text-slate-900">
+            My Payslips & Salary Statements
+          </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            View monthly payroll breakdowns, tax withholdings, and download official PDF statements.
+            View monthly payroll breakdowns, tax withholdings, and download
+            official PDF statements.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -75,26 +132,44 @@ export const EmployeePayslips = () => {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Latest Net Salary</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            Latest Net Salary
+          </p>
           <div className="flex items-baseline justify-between mt-2">
-            <h3 className="text-2xl font-bold text-slate-900">{payslips[0]?.netSalary}</h3>
-            <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">June 2026</span>
+            <h3 className="text-2xl font-bold text-slate-900">
+              {payslips[0]?.netPay}
+            </h3>
+            <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
+              June 2026
+            </span>
           </div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Statements</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            Total Statements
+          </p>
           <div className="flex items-baseline justify-between mt-2">
-            <h3 className="text-2xl font-bold text-slate-900">{payslips.length}</h3>
-            <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">Archived</span>
+            <h3 className="text-2xl font-bold text-slate-900">
+              {payslips.length}
+            </h3>
+            <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
+              Archived
+            </span>
           </div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Tax Withheld (YTD)</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            Tax Withheld (YTD)
+          </p>
           <div className="flex items-baseline justify-between mt-2">
-            <h3 className="text-2xl font-bold text-slate-900">\$1,600.00</h3>
-            <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md">Verified</span>
+            <h3 className="text-2xl font-bold text-slate-900">
+              {taxYTD.totalTaxDeducted}
+            </h3>
+            <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md">
+              Verified
+            </span>
           </div>
         </div>
       </div>
@@ -102,7 +177,9 @@ export const EmployeePayslips = () => {
       {/* Payslips Table */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div className="p-5 border-b border-slate-200">
-          <h2 className="text-base font-semibold text-slate-900">Payslip History</h2>
+          <h2 className="text-base font-semibold text-slate-900">
+            Payslip History
+          </h2>
         </div>
 
         <div className="overflow-x-auto">
@@ -119,11 +196,22 @@ export const EmployeePayslips = () => {
             </thead>
             <tbody className="divide-y divide-slate-200 text-sm">
               {payslips.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="py-4 px-6 font-semibold text-slate-900">{item.month}</td>
-                  <td className="py-4 px-6 text-slate-600">{item.grossSalary}</td>
-                  <td className="py-4 px-6 text-red-600 font-medium">-{item.deductions}</td>
-                  <td className="py-4 px-6 font-bold text-slate-900">{item.netSalary}</td>
+                <tr
+                  key={item.id}
+                  className="hover:bg-slate-50/50 transition-colors"
+                >
+                  <td className="py-4 px-6 font-semibold text-slate-900">
+                    {item.month} {item.year}
+                  </td>
+                  <td className="py-4 px-6 text-slate-600">
+                    {item.grossEarnings}
+                  </td>
+                  <td className="py-4 px-6 text-red-600 font-medium">
+                    -{item.totalDeductions}
+                  </td>
+                  <td className="py-4 px-6 font-bold text-slate-900">
+                    {item.netPay}
+                  </td>
                   <td className="py-4 px-6">
                     <span className="inline-block px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-md border border-emerald-200">
                       {item.status}
@@ -137,7 +225,14 @@ export const EmployeePayslips = () => {
                       View Breakdown
                     </button>
                     <button
-                      onClick={() => alert(`Downloading ${item.fileName}`)}
+                      onClick={() =>
+                        handleDownloadPDF(
+                          item._id,
+                          item.empId,
+                          item.month,
+                          item.year,
+                        )
+                      }
                       className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all"
                     >
                       Download PDF
@@ -154,13 +249,15 @@ export const EmployeePayslips = () => {
       {selectedPayslip && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
-            
             <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <div>
                 <span className="text-xs font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                  {selectedPayslip.id}
+                  {selectedPayslip.empId}
                 </span>
-                <h2 className="text-lg font-bold text-slate-900 mt-1">Salary Breakdown - {selectedPayslip.month}</h2>
+                <h2 className="text-lg font-bold text-slate-900 mt-1">
+                  Salary Breakdown - {selectedPayslip.month}{" "}
+                  {selectedPayslip.year}
+                </h2>
               </div>
               <button
                 onClick={() => setSelectedPayslip(null)}
@@ -173,38 +270,56 @@ export const EmployeePayslips = () => {
             <div className="p-6 space-y-6">
               {/* Earnings */}
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Earnings</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+                  Earnings
+                </p>
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-slate-600">Basic Salary</span>
-                    <span className="font-semibold text-slate-900">{selectedPayslip.breakdown.basic}</span>
+                    <span className="font-semibold text-slate-900">
+                      {selectedPayslip.basicSalary}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-600">Allowances & Bonuses</span>
-                    <span className="font-semibold text-slate-900">{selectedPayslip.breakdown.allowances}</span>
+                    <span className="font-semibold text-slate-900">
+                      {selectedPayslip.allowances || 0}
+                    </span>
                   </div>
                   <div className="pt-2 border-t border-slate-200 flex justify-between font-bold">
                     <span className="text-slate-900">Gross Total</span>
-                    <span className="text-slate-900">{selectedPayslip.grossSalary}</span>
+                    <span className="text-slate-900">
+                      {selectedPayslip.grossEarnings}
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* Deductions */}
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Deductions</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+                  Deductions
+                </p>
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-slate-600">Tax / TDS Withholding</span>
-                    <span className="font-semibold text-red-600">-{selectedPayslip.breakdown.taxTds}</span>
+                    <span className="text-slate-600">
+                      Tax / TDS Withholding
+                    </span>
+                    <span className="font-semibold text-red-600">
+                      -{selectedPayslip.taxDeduction}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-600">Provident Fund (PF)</span>
-                    <span className="font-semibold text-red-600">-{selectedPayslip.breakdown.providentFund}</span>
+                    <span className="font-semibold text-red-600">
+                      -{selectedPayslip.providentFund}
+                    </span>
                   </div>
                   <div className="pt-2 border-t border-slate-200 flex justify-between font-bold">
                     <span className="text-slate-900">Total Deductions</span>
-                    <span className="text-red-600">-{selectedPayslip.deductions}</span>
+                    <span className="text-red-600">
+                      -{selectedPayslip.totalDeductions}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -212,18 +327,28 @@ export const EmployeePayslips = () => {
               {/* Net Pay Box */}
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-blue-600">Net Take-Home Pay</p>
-                  <p className="text-xl font-bold text-slate-900 mt-0.5">{selectedPayslip.netSalary}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-blue-600">
+                    Net Take-Home Pay
+                  </p>
+                  <p className="text-xl font-bold text-slate-900 mt-0.5">
+                    {selectedPayslip.netPay}
+                  </p>
                 </div>
                 <button
-                  onClick={() => alert(`Downloading ${selectedPayslip.fileName}`)}
+                  onClick={() =>
+                    handleDownloadPDF(
+                      selectedPayslip._id,
+                      selectedPayslip.empId,
+                      selectedPayslip.month,
+                      selectedPayslip.year,
+                    )
+                  }
                   className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-sm transition-all"
                 >
                   Download Official PDF
                 </button>
               </div>
             </div>
-
           </div>
         </div>
       )}

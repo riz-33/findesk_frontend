@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import api from "../../services/api";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export const EmployeeClaims = () => {
   // Mock data for employee's submitted claims
@@ -67,16 +69,44 @@ export const EmployeeClaims = () => {
 
   const getStatusBadge = (status) => {
     switch (status) {
-      case "Approved":
+      case "Resolved":
         return "bg-emerald-50 text-emerald-700 border-emerald-200";
-      case "Rejected":
-        return "bg-red-50 text-red-700 border-red-200";
-      case "Pending":
+      case "In Progress":
         return "bg-amber-50 text-amber-700 border-amber-200";
+      case "Open":
+        return "bg-blue-50 text-blue-700 border-blue-200";
       default:
         return "bg-slate-100 text-slate-700 border-slate-200";
     }
   };
+
+  const getPriorityBadge = (priority) => {
+    switch (priority) {
+      case "Urgent":
+        return "text-red-600 bg-red-50 border-red-200";
+      case "High":
+        return "text-orange-600 bg-orange-50 border-orange-200";
+      case "Medium":
+        return "text-blue-600 bg-blue-50 border-blue-200";
+      default:
+        return "text-slate-600 bg-slate-50 border-slate-200";
+    }
+  };
+
+  const getTickets = async () => {
+    try {
+      const response = await api.get("/tickets/my-tickets");
+      setClaims(response.data);
+      console.log("Fetched tickets:", response.data);
+    } catch (error) {
+      console.error("Error fetching tickets:", error);
+      // setErrorMsg("Failed to load tickets from database.");
+    }
+  };
+
+  useEffect(() => {
+    getTickets();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -91,25 +121,28 @@ export const EmployeeClaims = () => {
             tax saving exemption proofs.
           </p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium text-sm rounded-xl shadow-sm shadow-blue-600/20 transition-all gap-2"
-        >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+
+        <Link to="/emp/add-ticket">
+          <button
+            // onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium text-sm rounded-xl shadow-sm shadow-blue-600/20 transition-all gap-2"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M12 4v16m8-8H4"
-            ></path>
-          </svg>
-          Submit New Claim
-        </button>
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 4v16m8-8H4"
+              ></path>
+            </svg>
+            Submit New Claim
+          </button>
+        </Link>
       </div>
 
       {/* Claims Summary Cards */}
@@ -171,7 +204,7 @@ export const EmployeeClaims = () => {
               <tr className="bg-slate-50/70 border-b border-slate-200 text-xs font-semibold uppercase text-slate-500 tracking-wider">
                 <th className="py-3 px-6">Claim ID & Category</th>
                 <th className="py-3 px-6">Type</th>
-                <th className="py-3 px-6">Amount</th>
+                <th className="py-3 px-6">Priority</th>
                 <th className="py-3 px-6">Status</th>
                 <th className="py-3 px-6">Date</th>
                 <th className="py-3 px-6 text-right">Attachment</th>
@@ -186,19 +219,23 @@ export const EmployeeClaims = () => {
                   >
                     <td className="py-4 px-6">
                       <p className="font-semibold text-slate-900">
-                        {claim.category}
+                        {claim.subject?.toUpperCase()}
                       </p>
                       <span className="text-xs font-mono text-blue-600 font-medium">
-                        {claim.id}
+                        {claim.ticketId}
                       </span>
                     </td>
                     <td className="py-4 px-6">
                       <span className="inline-block px-2.5 py-1 bg-slate-100 text-slate-700 text-xs font-semibold rounded-md border border-slate-200">
-                        {claim.type}
+                        {claim.category}
                       </span>
                     </td>
-                    <td className="py-4 px-6 font-bold text-slate-900">
-                      {claim.amount}
+                    <td className="py-4 px-6">
+                      <span
+                        className={`inline-block px-2.5 py-1 rounded-md text-xs font-semibold border ${getPriorityBadge(claim.priority)}`}
+                      >
+                        {claim.priority}
+                      </span>
                     </td>
                     <td className="py-4 px-6">
                       <span
@@ -208,11 +245,11 @@ export const EmployeeClaims = () => {
                       </span>
                     </td>
                     <td className="py-4 px-6 text-slate-500 text-xs font-medium">
-                      {claim.submissionDate}
+                      {claim.createdAt?.toString().split("T")[0]}
                     </td>
                     <td className="py-4 px-6 text-right">
                       <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
-                        {claim.attachment}
+                        {claim.attachment || "N/A"}
                       </span>
                     </td>
                   </tr>
@@ -310,7 +347,9 @@ export const EmployeeClaims = () => {
                         </option>
                         <option value="Tax Document">Tax Document</option>
                         <option value="Banking Updates">Banking Updates</option>
-                        <option value="Bonus & Commission Status">Bonus & Commission Status</option>
+                        <option value="Bonus & Commission Status">
+                          Bonus & Commission Status
+                        </option>
                       </>
                     )}
                   </select>

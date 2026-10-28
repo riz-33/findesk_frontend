@@ -10,7 +10,6 @@ export const AuthContext = createContext({
 });
 
 export const AuthProvider = ({ children }) => {
-  // Lazily load user from localStorage immediately on mount
   const [user, setUser] = useState(() => {
     try {
       const savedUser = localStorage.getItem("user");
@@ -22,17 +21,25 @@ export const AuthProvider = ({ children }) => {
 
   const [loading, setLoading] = useState(true);
 
-  // 🔹 Load user from backend using token
+  // 🔹 Custom wrapper for setUser to automatically sync with localStorage
+  const handleSetUser = (updatedUser) => {
+    setUser(updatedUser);
+    if (updatedUser) {
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+    } else {
+      localStorage.removeItem("user");
+    }
+  };
+
+  // 🔹 Load user from backend using token on refresh
   const loadUser = async () => {
     try {
       const res = await api.get("/auth/me");
       if (res.data && res.data.user) {
-        setUser(res.data.user);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
+        handleSetUser(res.data.user);
       }
     } catch (error) {
       console.error("Failed to load user profile:", error);
-      // ONLY logout if token is invalid/unauthorized (401), not on network errors
       if (error.response && error.response.status === 401) {
         logout();
       }
@@ -47,8 +54,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("token", data.token);
     }
     const userData = data.user || data;
-    localStorage.setItem("user", JSON.stringify(userData));
-    setUser(userData);
+    handleSetUser(userData);
   };
 
   // 🔹 Logout Handler
@@ -73,7 +79,7 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         user,
-        setUser,
+        setUser: handleSetUser,
         login,
         logout,
         loading,

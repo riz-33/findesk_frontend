@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../../services/api.js";
 
 export const EmployeeAddTicket = () => {
   const [category, setCategory] = useState("");
@@ -44,9 +45,11 @@ export const EmployeeAddTicket = () => {
       }
 
       // TODO: Replace with your actual backend API call
-      // await axios.post('/api/tickets', formData, {
-      //   headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` }
-      // });
+      await api.post("/tickets/add-ticket", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       console.log("Submitting Ticket:", {
         category,

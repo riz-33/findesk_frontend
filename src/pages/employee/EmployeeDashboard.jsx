@@ -1,33 +1,34 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import api from "../../services/api.js";
 
 export const EmployeeDashboard = () => {
   // Mock data for employee's raised tickets
   const [tickets, setTickets] = useState([
-    {
-      id: "TICK-1024",
-      category: "Tax / TDS Deduction",
-      subject: "Discrepancy in Q3 tax withholding certificate",
-      priority: "High",
-      status: "In Progress",
-      date: "2026-06-10",
-    },
-    {
-      id: "TICK-1018",
-      category: "Expense Reimbursement",
-      subject: "Client dinner bill reimbursement claim",
-      priority: "Medium",
-      status: "Resolved",
-      date: "2026-06-02",
-    },
-    {
-      id: "TICK-0995",
-      category: "Salary / Payslip",
-      subject: "Overtime allowance missing in May payslip",
-      priority: "Urgent",
-      status: "Open",
-      date: "2026-05-28",
-    },
+    // {
+    //   id: "TICK-1024",
+    //   category: "Tax / TDS Deduction",
+    //   subject: "Discrepancy in Q3 tax withholding certificate",
+    //   priority: "High",
+    //   status: "In Progress",
+    //   date: "2026-06-10",
+    // },
+    // {
+    //   id: "TICK-1018",
+    //   category: "Expense Reimbursement",
+    //   subject: "Client dinner bill reimbursement claim",
+    //   priority: "Medium",
+    //   status: "Resolved",
+    //   date: "2026-06-02",
+    // },
+    // {
+    //   id: "TICK-0995",
+    //   category: "Salary / Payslip",
+    //   subject: "Overtime allowance missing in May payslip",
+    //   priority: "Urgent",
+    //   status: "Open",
+    //   date: "2026-05-28",
+    // },
   ]);
 
   // Status badge style helper
@@ -57,6 +58,21 @@ export const EmployeeDashboard = () => {
         return "text-slate-600 bg-slate-50 border-slate-200";
     }
   };
+
+  const getTickets = async () => {
+    try {
+      const response = await api.get("/tickets/my-tickets");
+      setTickets(response.data);
+      console.log("Fetched tickets:", response.data);
+    } catch (error) {
+      console.error("Error fetching tickets:", error);
+      setErrorMsg("Failed to load tickets from database.");
+    }
+  };
+
+  useEffect(() => {
+    getTickets();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -156,41 +172,52 @@ export const EmployeeDashboard = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 text-sm">
-              {tickets.map((ticket) => (
-                <tr
-                  key={ticket.id}
-                  className="hover:bg-slate-50/50 transition-colors"
-                >
-                  <td className="py-4 px-6">
-                    <p className="font-semibold text-slate-900">
-                      {ticket.subject}
-                    </p>
-                    <span className="text-xs font-mono text-slate-500">
-                      {ticket.id}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6 text-slate-600 font-medium">
-                    {ticket.category}
-                  </td>
-                  <td className="py-4 px-6">
-                    <span
-                      className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getPriorityBadge(ticket.priority)}`}
-                    >
-                      {ticket.priority}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span
-                      className={`inline-block px-2.5 py-1 rounded-md text-xs font-semibold border ${getStatusBadge(ticket.status)}`}
-                    >
-                      {ticket.status}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6 text-slate-500 text-xs font-medium">
-                    {ticket.date}
+              {tickets.length > 0 ? (
+                tickets.map((ticket) => (
+                  <tr
+                    key={ticket.id}
+                    className="hover:bg-slate-50/50 transition-colors"
+                  >
+                    <td className="py-4 px-6">
+                      <p className="font-semibold text-slate-900">
+                        {ticket.subject.toUpperCase()}
+                      </p>
+                      <span className="text-xs font-mono text-slate-500">
+                        {ticket.ticketId}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6 text-slate-600 font-medium">
+                      {ticket.category}
+                    </td>
+                    <td className="py-4 px-6">
+                      <span
+                        className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getPriorityBadge(ticket.priority)}`}
+                      >
+                        {ticket.priority}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span
+                        className={`inline-block px-2.5 py-1 rounded-md text-xs font-semibold border ${getStatusBadge(ticket.status)}`}
+                      >
+                        {ticket.status}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6 text-slate-500 text-xs font-medium">
+                      {ticket.createdAt.toString().split("T")[0]}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan="5"
+                    className="py-8 text-center text-slate-400 text-sm"
+                  >
+                    No claims submitted yet.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

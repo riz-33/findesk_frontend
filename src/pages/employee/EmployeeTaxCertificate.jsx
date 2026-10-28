@@ -1,15 +1,16 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import api from "../../services/api.js";
 
 export const EmployeeTaxCertificate = () => {
   // Mock tax certificate records for the employee
-  const [certificates] = useState([
+  const [certificates, setCertificates] = useState([
     {
       id: "TAX-CERT-2025-26",
-      financialYear: "2025 - 2026",
+      year: "2025 - 2026",
       totalIncome: "\$50,400.00",
-      totalTaxWithheld: "\$6,600.00",
+      taxAmount: "\$6,600.00",
       status: "Verified & Issued",
-      issuedDate: "2026-05-15",
+      createdAt: "2026-05-15",
       fileName: "EMP-101_Tax_Certificate_2025_26.pdf",
       breakdown: {
         q1Tax: "\$1,650.00",
@@ -21,11 +22,11 @@ export const EmployeeTaxCertificate = () => {
     },
     {
       id: "TAX-CERT-2024-25",
-      financialYear: "2024 - 2025",
+      year: "2024 - 2025",
       totalIncome: "\$46,000.00",
-      totalTaxWithheld: "\$5,800.00",
+      taxAmount: "\$5,800.00",
       status: "Verified & Issued",
-      issuedDate: "2025-05-10",
+      createdAt: "2025-05-10",
       fileName: "EMP-101_Tax_Certificate_2024_25.pdf",
       breakdown: {
         q1Tax: "\$1,450.00",
@@ -37,7 +38,42 @@ export const EmployeeTaxCertificate = () => {
     },
   ]);
 
-  const [selectedCert, setSelectedCert] = useState(null); // Detail modal
+  const [selectedCert, setSelectedCert] = useState(null);
+
+  const fetchTaxCertificate = async () => {
+    try {
+      const response = await api.get("/taxcertificate/my-certificates");
+      setCertificates(response.data);
+      console.log(response.data);
+      setErrorMsg("");
+    } catch (error) {
+      console.error("Error fetching taxcertificate:", error);
+      // setErrorMsg("Failed to load payslips from database.");
+    }
+  };
+
+  useEffect(() => {
+    fetchTaxCertificate();
+  }, []);
+
+  const handleDownloadPDF = async (certId, empId, year) => {
+    try {
+      const response = await api.get(`/taxcertificate/download/${certId}`, {
+        responseType: "blob",
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `Tax_Certificate_${year}_${empId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+      alert("Failed to download tax certificate PDF.");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -67,7 +103,7 @@ export const EmployeeTaxCertificate = () => {
           </p>
           <div className="flex items-baseline justify-between mt-2">
             <h3 className="text-2xl font-bold text-slate-900">
-              {certificates[0]?.totalTaxWithheld}
+              {certificates[0]?.taxAmount}
             </h3>
             <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
               FY 2025-26
@@ -95,7 +131,7 @@ export const EmployeeTaxCertificate = () => {
           </p>
           <div className="flex items-baseline justify-between mt-2">
             <h3 className="text-2xl font-bold text-slate-900">
-              {certificates[0]?.breakdown.exemptionClaimed}
+              0{/* {certificates[0]?.breakdown.exemptionClaimed || 0} */}
             </h3>
             <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md">
               Approved
@@ -131,36 +167,36 @@ export const EmployeeTaxCertificate = () => {
                   className="hover:bg-slate-50/50 transition-colors"
                 >
                   <td className="py-4 px-6">
-                    <p className="font-semibold text-slate-900">
-                      {cert.financialYear}
-                    </p>
+                    <p className="font-semibold text-slate-900">{cert.year}</p>
                     <span className="text-xs font-mono text-blue-600 font-medium">
-                      {cert.id}
+                      {cert.empId}
                     </span>
                   </td>
                   <td className="py-4 px-6 text-slate-600 font-medium">
-                    {cert.totalIncome}
+                    {cert.totalIncome || 0}
                   </td>
                   <td className="py-4 px-6 font-bold text-slate-900">
-                    {cert.totalTaxWithheld}
+                    {cert.taxAmount}
                   </td>
                   <td className="py-4 px-6">
                     <span className="inline-block px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-md border border-emerald-200">
-                      {cert.status}
+                      {cert.status || "status"}
                     </span>
                   </td>
                   <td className="py-4 px-6 text-slate-500 text-xs font-medium">
-                    {cert.issuedDate}
+                    {cert.createdAt.toString().split("T")[0]}
                   </td>
                   <td className="py-4 px-6 text-right space-x-2">
-                    <button
+                    {/* <button
                       onClick={() => setSelectedCert(cert)}
                       className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-all"
                     >
                       View Summary
-                    </button>
+                    </button> */}
                     <button
-                      onClick={() => alert(`Downloading ${cert.fileName}`)}
+                      onClick={() =>
+                        handleDownloadPDF(cert._id, cert.empId, cert.year)
+                      }
                       className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all"
                     >
                       Download PDF
